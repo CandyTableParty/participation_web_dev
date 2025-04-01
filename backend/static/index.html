@@ -299,37 +299,33 @@ document.getElementById("downloadExcelBtn").addEventListener("click", async () =
                 }
 
                 const total = staff.totalParticipation ?? 0;
-                const color = total > 129 ? "red" : total > 100 ? "orange" : "black";
+                const leadCount = staff.leadTaskCount ?? 0;
 
-                fetch(`${BASE_URL}/participation?staffId=${staff.staffId}`)
-                    .then(res => res.json())
-                    .then(pData => {
-                        const leadCount = pData.filter(p => p.leadTaskFlag === 1).length;
-                        const leadColor = leadCount >= 4 ? "red" : leadCount >= 3 ? "orange" : "black";
+                const totalColor = total > 129 ? "red" : total > 100 ? "orange" : "black";
+                const leadColor = leadCount >= 4 ? "red" : leadCount >= 3 ? "orange" : "black";
 
-                        li.innerHTML = `<span>${staff.userName} (${staff.staffId})</span>
-                            <span style="float: right;">
-                                <span style="color: ${color}; font-weight: bold;">총 ${total}%</span> /
-                                <span style="color: ${leadColor}; font-weight: bold;">책임: ${leadCount}개</span>
-                            </span>`;
-                        li.style.backgroundColor = background;
-                        li.setAttribute("style", `background-color: ${background} !important`);
-                        console.log("🧪 배경 적용:", position, staff.userName, background, staff.staffClass);
+                li.innerHTML = `<span>${staff.userName} (${staff.staffId})</span>
+                    <span style="float: right;">
+                        <span style="color: ${totalColor}; font-weight: bold;">총 ${total}%</span> /
+                        <span style="color: ${leadColor}; font-weight: bold;">책임: ${leadCount}개</span>
+                    </span>`;
+                li.style.backgroundColor = background;
+                li.setAttribute("style", `background-color: ${background} !important`);
+                console.log("🧪 배경 적용:", position, staff.userName, background, staff.staffClass);
 
-                        li.dataset.staffId = staff.staffId;
-                        li.onclick = function () {
-                            selectedStaffId = staff.staffId;
-                            document.querySelectorAll("#staffList li").forEach(item => item.classList.remove("selected"));
-                            this.classList.add("selected");
-                            loadExistingParticipation(staff.staffId);
-                        };
+                li.dataset.staffId = staff.staffId;
+                li.onclick = function () {
+                    selectedStaffId = staff.staffId;
+                    document.querySelectorAll("#staffList li").forEach(item => item.classList.remove("selected"));
+                    this.classList.add("selected");
+                    loadExistingParticipation(staff.staffId);
+                };
 
-                        staffList.appendChild(li);
-                    });
+                staffList.appendChild(li);
             });
         })
         .catch(error => console.error("직원 데이터 불러오기 실패:", error));
-    }
+}
 
         function loadExistingParticipation(staffId) {
             fetch(`${BASE_URL}/participation?staffId=${staffId}`)
