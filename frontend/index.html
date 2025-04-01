@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>참여율 관리</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #totalParticipation {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .overLimit {
+            color: red;
+            font-weight: bold;
+        }
+        .container {
+            display: flex;
+            justify-content: space-between;
+        }
+        .panel {
+            width: 48%;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .panel-left {
+            border-right: 1px solid #000;
+        }
+        .section {
+            margin-bottom: 15px;
+        }
+        .sub-container {
+            display: flex;  
+            justify-content: space-between;
+        }
+        .sub-panel {
+            width: 48%;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        .selected {
+            background-color: #eef;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            cursor: pointer;
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        li:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <h1>참여율 관리 시스템</h1>
+
+    <div class="container">
+        <!-- 왼쪽: 인원 관리 -->
+        <div class="panel panel-left">
+            <h2>인원 관리</h2>
+            <div class="section">
+                <label for="departmentSelect">부서 선택:</label>
+                <select id="departmentSelect" onchange="loadStaff()">
+                    <option value="">부서를 선택하세요</option>
+                </select>
+            </div>
+            
+            <div class="sub-container"> 
+                <!-- 직원 목록 -->
+                <div class="sub-panel">
+                    <h3>직원 목록</h3>
+                    <ul id="staffList"></ul>
+                </div>
+
+                <!-- 참여 정보 -->
+                <div class="sub-panel">
+                    <h3>참여 정보</h3>
+                    <p id="totalParticipation">총 참여율: 0%</p>
+                    <div id="projectInputs"></div>
+                    <button onclick="addProjectInput()">사업 추가</button>
+                    <button onclick="saveAllParticipation()">저장</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 오른쪽: 사업 관리 -->
+        <div class="panel">
+            <h2>사업 관리</h2>
+            <div class="section">
+                <label for="projectDepartmentSelect">부서 선택:</label>
+                <select id="projectDepartmentSelect" onchange="loadProjects()">
+                    <option value="">부서를 선택하세요</option>
+                </select>
+            </div>
+            <div class="section">
+                <h3>사업 목록</h3>
+                <ul id="projectList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = window.location.origin;
+        let projectCount = 0;
+        let selectedStaffId = null;
+
+        window.onload = function () {
+            loadDepartments();
+        };
+
+        function loadDepartments() {
+            fetch(`${BASE_URL}/departments/staff`)
+                .then(res => res.json())
+                .then(data => {
+                    const select = document.getElementById("departmentSelect");
+                    select.innerHTML = `<option value="">부서를 선택하세요</option>`;
+                    data.forEach(dept => {
+                        const opt = document.createElement("option");
+                        opt.value = dept;
+                        opt.textContent = dept;
+                        select.appendChild(opt);
+                    });
+                });
+
+            fetch(`${BASE_URL}/departments/projects`)
+                .then(res => res.json())
+                .then(data => {
+                    const select = document.getElementById("projectDepartmentSelect");
+                    select.innerHTML = `<option value="">부서를 선택하세요</option>`;
+                    data.forEach(dept => {
+                        const opt = document.createElement("option");
+                        opt.value = dept;
+                        opt.textContent = dept;
+                        select.appendChild(opt);
+                    });
+                });
+        }
+
+        function updateStaffParticipationDisplay(staffId) {
+            const staffListItems = document.querySelectorAll("#staffList li");
+
+            staffListItems.forEach(li => {
+                if (li.dataset.staffId === staffId) {
+                    let existingParticipation = li.querySelector(".staffParticipation");
+                    if (existingParticipation) existingParticipation.remove();
+
+                    fetch(`${BASE_URL}/participation?staffId=${staffId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            let totalParticipation = data.reduce((sum, entry) => sum + parseFloat(entry.participationRate), 0);
+                            let colorClass = totalParticipation > 129 ? "red" : totalParticipation > 100 ? "orange" : "black";
+
+                            let span = document.createElement("span");
+                            span.classList.add("staffParticipation");
+                            span.style.color = colorClass;
+                            span.style.fontWeight = "bold";
+                            span.style.marginLeft = "10px";
+                            span.textContent = `총 ${totalParticipation}%`;
+
+                            li.appendChild(span);
+                        })
+                        .catch(error => console.error("총 참여율 업데이트 실패:", error));
+                }
+            });
+        }
+
+        function saveAllParticipation() {
+            if (!selectedStaffId) {
+                alert("직원을 선택하세요!");
+                return;
+            }
+
+            let participationData = [];
+            document.querySelectorAll("#projectInputs div").forEach(div => {
+                const projectId = div.querySelector(".selectedProject").dataset.projectId;
+                const participationRate = parseFloat(div.querySelector(".participationRate").value) || 0;
+                const leadTaskFlag = div.querySelector(".leadTaskFlag").checked;
+
+                if (!projectId) {
+                    alert("사업을 선택하세요!");
+                    return;
+                }
+
+                participationData.push({
+                    staffId: selectedStaffId,
+                    projectId: projectId,
+                    participationRate: participationRate,
+                    leadTaskFlag: leadTaskFlag
+                });
+            });
+
+            if (participationData.length === 0) {
+                alert("저장할 데이터가 없습니다!");
+                return;
+            }
+
+            document.querySelectorAll(".staffParticipation").forEach(span => span.remove());
+
+            fetch(`${BASE_URL}/participation`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(participationData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("🚀 참여율 저장 완료:", data);
+                let currentSelected = selectedStaffId;
+                loadStaff();
+                setTimeout(() => {
+                    let staffItem = document.querySelector(`[data-staff-id="${currentSelected}"]`);
+                    if (staffItem) staffItem.classList.add("selected");
+                }, 300);
+                updateStaffParticipationDisplay(selectedStaffId);
+                setTimeout(() => {
+                    alert(data.message);
+                }, 200);
+            })
+            .catch(error => {
+                console.error("참여율 저장 실패:", error);
+                alert("저장 중 오류가 발생했습니다. 다시 시도해주세요.");
+            });
+        }
+
+        function loadStaff() {
+            const department = document.getElementById("departmentSelect").value;
+            if (!department) return;
+
+            fetch(`${BASE_URL}/staff?department=${department}`)
+                .then(response => response.json())
+                .then(data => {
+                    const staffList = document.getElementById("staffList");
+                    staffList.innerHTML = "";
+                    data.forEach(staff => {
+                        let li = document.createElement("li");
+                        const total = staff.totalParticipation ?? 0;
+                        let color = total > 129 ? "red" : total > 100 ? "orange" : "black";
+
+                        li.innerHTML = `<span>${staff.userName} (${staff.staffId})</span>
+                                        <span style="float: right; color: ${color};">총 ${total}%</span>`;
+                        li.dataset.staffId = staff.staffId;
+                        li.onclick = function () {
+                            selectedStaffId = staff.staffId;
+                            document.querySelectorAll("#staffList li").forEach(item => item.classList.remove("selected"));
+                            this.classList.add("selected");
+                            loadExistingParticipation(staff.staffId);
+                        };
+                        staffList.appendChild(li);
+                    });
+                })
+                .catch(error => console.error("직원 데이터 불러오기 실패:", error));
+        }
+
+        function loadExistingParticipation(staffId) {
+            fetch(`${BASE_URL}/participation?staffId=${staffId}`)
+                .then(response => response.json())
+                .then(data => {
+                    projectCount = 0;
+                    document.getElementById("projectInputs").innerHTML = "";
+                    data.forEach(entry => addProjectInput(entry));
+                })
+                .catch(error => console.error("기존 참여율 불러오기 실패:", error));
+        }
+
+        function loadProjects() {
+            const department = document.getElementById("projectDepartmentSelect").value;
+            if (!department) return;
+
+            fetch(`${BASE_URL}/projects?department=${department}`)
+                .then(response => response.json())
+                .then(data => {
+                    const projectList = document.getElementById("projectList");
+                    projectList.innerHTML = "";
+                    data.forEach(project => {
+                        let li = document.createElement("li");
+                        li.textContent = project.projectName;
+                        li.onclick = () => selectProject(project.projectId, project.projectName);
+                        projectList.appendChild(li);
+                    });
+                })
+                .catch(error => console.error("사업 데이터 불러오기 실패:", error));
+        }
+
+        function selectProject(id, name) {
+            const allInputs = document.querySelectorAll(".selectedProject");
+            for (let input of allInputs) {
+                if (input.dataset.projectId === id) {
+                    alert("이미 선택된 사업입니다.");
+                    return;
+                }
+            }
+
+            for (let input of allInputs) {
+                if (!input.value) {
+                    input.value = name;
+                    input.dataset.projectId = id;
+                    input.dataset.projectName = name;
+                    return;
+                }
+            }
+
+            alert("사업 추가 버튼을 먼저 눌러주세요.");
+        }
+
+        function addProjectInput(entry = null) {
+            if (projectCount >= 5) {
+                alert("최대 5개의 사업만 추가할 수 있습니다!");
+                return;
+            }
+
+            projectCount++;
+            const projectInputs = document.getElementById("projectInputs");
+            const div = document.createElement("div");
+
+            div.innerHTML = `
+                <span>순번 ${projectCount}:</span>
+                <input type="text" class="selectedProject" readonly placeholder="오른쪽에서 사업 선택">
+                <input type="number" class="participationRate" placeholder="참여율 입력 (%)" oninput="updateTotalParticipation()">
+                <label><input type="checkbox" class="leadTaskFlag"> 과제 책임</label>
+                <button onclick="removeProjectInput(this)">삭제</button>
+            `;
+
+            projectInputs.appendChild(div);
+
+            if (entry) {
+                const projectInput = div.querySelector(".selectedProject");
+                const rateInput = div.querySelector(".participationRate");
+                const leadFlag = div.querySelector(".leadTaskFlag");
+
+                projectInput.value = entry.projectName ?? "알 수 없는 사업";
+                projectInput.dataset.projectId = entry.projectId;
+                projectInput.dataset.projectName = entry.projectName;
+                rateInput.value = entry.participationRate;
+                leadFlag.checked = entry.leadTaskFlag === 1;
+            }
+
+            updateTotalParticipation();
+        }
+
+        function removeProjectInput(button) {
+            button.parentElement.remove();
+            projectCount--;
+            updateTotalParticipation();
+        }
+
+        function updateTotalParticipation(total = null) {
+            if (total === null) {
+                total = 0;
+                document.querySelectorAll(".participationRate").forEach(input => {
+                    total += parseFloat(input.value) || 0;
+                });
+            }
+            document.getElementById("totalParticipation").textContent = `총 참여율: ${total}%`;
+        }
+        async function fetchParticipationData() {
+    const token = localStorage.getItem("token"); // JWT 토큰 가져오기
+
+    const response = await fetch("/participation", {
+        method: "GET",
+        headers: {
+            "Authorization": `Bearer ${token}` // JWT를 헤더에 추가
+        }
+    });
+
+    if (response.ok) {
+        const data = await response.json();
+        console.log("참여율 데이터:", data);
+        // 여기서 데이터를 받아 UI에 뿌려주면 됩니다
+    } else if (response.status === 401) {
+        alert("로그인이 필요합니다");
+        window.location.href = "/static/login.html"; // 로그인 페이지로 이동
+    } else {
+        alert("데이터 로딩 중 오류 발생");
+    }
+}
+
+// 페이지 로드 시 데이터 호출 예시
+window.onload = fetchParticipationData;    
+    </script>
+</body>
+</html>

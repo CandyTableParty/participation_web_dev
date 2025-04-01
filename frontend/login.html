@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .login-container {
+            width: 350px;
+            margin: 100px auto;
+            padding: 25px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        input, button {
+            width: 100%;
+            padding: 8px;
+            margin-top: 10px;
+            box-sizing: border-box;
+        }
+        button { cursor: pointer; }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <h2>관리자 로그인</h2>
+    <input type="text" id="username" placeholder="아이디">
+    <input type="password" id="password" placeholder="비밀번호">
+    <button onclick="login()">로그인</button>
+</div>
+
+<script>
+async function login() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    const BASE_URL = window.location.origin;
+    const response = await fetch(`${BASE_URL}/login`, { //🔴 URL 수정
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+    });
+
+    if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem("token", data.access_token);
+        alert("로그인 성공!");
+        window.location.href = "/static/index.html";  // 메인페이지 이동
+    } else {
+        alert("로그인 실패! 아이디나 비밀번호를 확인하세요");
+    }
+}
+
+</script>
+</body>
+</html>

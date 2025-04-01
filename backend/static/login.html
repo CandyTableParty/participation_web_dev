@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .login-container {
+            width: 350px;
+            margin: 100px auto;
+            padding: 25px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        input, button {
+            width: 100%;
+            padding: 8px;
+            margin-top: 10px;
+            box-sizing: border-box;
+        }
+        button { cursor: pointer; }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <h2>참여율 관리 시스템</h2>
+    <input type="text" id="username" placeholder="아이디">
+    <input type="password" id="password" placeholder="비밀번호">
+    <button type="button" onclick="login()">로그인</button>
+</div>
+
+<script>
+async function login() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    const BASE_URL = window.location.origin;
+    const loginUrl = `${BASE_URL}/login`;
+
+    console.log("🔗 로그인 요청 URL:", loginUrl);
+
+    try {
+        const response = await fetch(loginUrl, {
+            method: "POST",
+            mode: "cors",  // CORS 정책 명시
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            localStorage.setItem("token", data.access_token);
+            alert("로그인 성공!");
+            window.location.href = "/static/index.html";  // 메인페이지 이동
+        } else {
+            const errorText = await response.text();
+            console.error("❌ 로그인 실패 응답:", errorText);
+            alert("로그인 실패! 아이디나 비밀번호를 확인하세요");
+        }
+    } catch (err) {
+        console.error("❌ 로그인 요청 중 오류 발생:", err);
+        alert("서버에 연결할 수 없습니다. 네트워크 상태를 확인하세요.");
+    }
+}
+document.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        login();
+    }
+});
+</script>
+</body>
+</html>
