@@ -229,33 +229,6 @@ document.getElementById("downloadExcelBtn").addEventListener("click", async () =
                 });
             });
     }
-        function loadDepartments() {
-            fetch(`${BASE_URL}/departments/staff`)
-                .then(res => res.json())
-                .then(data => {
-                    const select = document.getElementById("departmentSelect");
-                    select.innerHTML = `<option value="">부서를 선택하세요</option>`;
-                    data.forEach(dept => {
-                        const opt = document.createElement("option");
-                        opt.value = dept;
-                        opt.textContent = dept;
-                        select.appendChild(opt);
-                    });
-                });
-
-            fetch(`${BASE_URL}/departments/projects`)
-                .then(res => res.json())
-                .then(data => {
-                    const select = document.getElementById("projectDepartmentSelect");
-                    select.innerHTML = `<option value="">부서를 선택하세요</option>`;
-                    data.forEach(dept => {
-                        const opt = document.createElement("option");
-                        opt.value = dept;
-                        opt.textContent = dept;
-                        select.appendChild(opt);
-                    });
-                });
-        }
 
         function updateStaffParticipationDisplay(staffId) {
             const staffListItems = document.querySelectorAll("#staffList li");
