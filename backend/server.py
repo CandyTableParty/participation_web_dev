@@ -208,19 +208,31 @@ def get_project_departments():
 
 # ✅ 직원 목록
 @app.get("/staff")
+@app.get("/staff")
 def get_staff(department: str = Query(None)):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
-            SELECT s.staffId, s.staffClass, s.userName, s.staffDepartment,
-                IFNULL(SUM(p.participationRate), 0) AS totalParticipation,
-                SUM(CASE WHEN p.leadTaskFlag = 1 THEN 1 ELSE 0 END) AS leadTaskCount
-            FROM staff s
-            LEFT JOIN participation p ON s.staffId = p.staffId
-            WHERE s.staffDepartment = %s
-            GROUP BY s.staffId, s.staffClass, s.userName, s.staffDepartment
-        """, (department,))
+        if department == "ALL" or department is None:
+            cursor.execute("""
+                SELECT s.staffId, s.staffClass, s.userName, s.staffDepartment,
+                    IFNULL(SUM(p.participationRate), 0) AS totalParticipation,
+                    SUM(CASE WHEN p.leadTaskFlag = 1 THEN 1 ELSE 0 END) AS leadTaskCount
+                FROM staff s
+                LEFT JOIN participation p ON s.staffId = p.staffId
+                GROUP BY s.staffId, s.staffClass, s.userName, s.staffDepartment
+            """)
+        else:
+            cursor.execute("""
+                SELECT s.staffId, s.staffClass, s.userName, s.staffDepartment,
+                    IFNULL(SUM(p.participationRate), 0) AS totalParticipation,
+                    SUM(CASE WHEN p.leadTaskFlag = 1 THEN 1 ELSE 0 END) AS leadTaskCount
+                FROM staff s
+                LEFT JOIN participation p ON s.staffId = p.staffId
+                WHERE s.staffDepartment = %s
+                GROUP BY s.staffId, s.staffClass, s.userName, s.staffDepartment
+            """, (department,))
+
         return cursor.fetchall()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"오류 발생: {str(e)}")

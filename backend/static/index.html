@@ -157,11 +157,78 @@ document.getElementById("downloadExcelBtn").addEventListener("click", async () =
         const BASE_URL = window.location.origin;
         let projectCount = 0;
         let selectedStaffId = null;
+        let userRole = null;
 
         window.onload = function () {
             loadDepartments();
         };
+// 토큰 디코딩 (payload 파싱)
+    function parseJwt(token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
 
+            return JSON.parse(jsonPayload);
+        } catch (e) {
+            console.error("토큰 파싱 실패", e);
+            return null;
+        }
+    }
+
+// 페이지 로딩 시 사용자 role 확인
+    window.onload = function () {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            window.location.href = "/static/login.html";
+        } else {
+            const decoded = parseJwt(token);
+            if (decoded && decoded.role) {
+                userRole = decoded.role;
+                console.log("현재 로그인 사용자 role:", userRole);
+            }
+        }
+        loadDepartments();
+    };
+
+    function loadDepartments() {
+        fetch(`${BASE_URL}/departments/staff`)
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById("departmentSelect");
+                select.innerHTML = `<option value="">부서를 선택하세요</option>`;
+
+                // ✅ 마스터 계정(admin)일 경우 "전 부서" 옵션 추가
+                if (userRole === 'admin') {
+                    const allOpt = document.createElement("option");
+                    allOpt.value = "ALL";
+                    allOpt.textContent = "- 전 부서 -";
+                    select.appendChild(allOpt);
+                }
+
+                data.forEach(dept => {
+                    const opt = document.createElement("option");
+                    opt.value = dept;
+                    opt.textContent = dept;
+                    select.appendChild(opt);
+                });
+            });
+
+        fetch(`${BASE_URL}/departments/projects`)
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById("projectDepartmentSelect");
+                select.innerHTML = `<option value="">부서를 선택하세요</option>`;
+                data.forEach(dept => {
+                    const opt = document.createElement("option");
+                    opt.value = dept;
+                    opt.textContent = dept;
+                    select.appendChild(opt);
+                });
+            });
+    }
         function loadDepartments() {
             fetch(`${BASE_URL}/departments/staff`)
                 .then(res => res.json())
