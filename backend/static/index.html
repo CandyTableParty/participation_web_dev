@@ -325,43 +325,82 @@ document.getElementById("downloadExcelBtn").addEventListener("click", async () =
             const staffList = document.getElementById("staffList");
             staffList.innerHTML = "";
 
+            // 부서별로 그룹핑
+            const groupedByDepartment = {};
+
             data.forEach(staff => {
-                let li = document.createElement("li");
-                let background = "";
-                const rawPosition = staff.staffClass || "";
-                const position = rawPosition.trim();
-
-                // ✅ 배경색 조건
-                if (position === "단장" || position === "본부장") {
-                    background = "rgba(173, 255, 47, 0.2)";
-                } else if (position === "센터장" || position === "실장") {
-                    background = "rgba(255, 255, 102, 0.2)";
+                const dept = staff.staffDepartment || "기타";
+                if (!groupedByDepartment[dept]) {
+                    groupedByDepartment[dept] = [];
                 }
+                groupedByDepartment[dept].push(staff);
+            });
 
-                const total = staff.totalParticipation ?? 0;
-                const leadCount = staff.leadTaskCount ?? 0;
+            // 부서별로 출력
+            Object.keys(groupedByDepartment).sort().forEach(dept => {
+                // 부서명 표시
+                const deptHeader = document.createElement("h3");
+                deptHeader.textContent = `📁 ${dept}`;
+                deptHeader.style.marginTop = "20px";
+                staffList.appendChild(deptHeader);
 
-                const totalColor = total > 129 ? "red" : total > 100 ? "orange" : "black";
-                const leadColor = leadCount >= 4 ? "red" : leadCount >= 3 ? "orange" : "black";
+                const staffArray = groupedByDepartment[dept];
 
-                li.innerHTML = `<span>${staff.userName} (${staff.staffId})</span>
-                    <span style="float: right;">
-                        <span style="color: ${totalColor}; font-weight: bold;">총 ${total}%</span> /
-                        <span style="color: ${leadColor}; font-weight: bold;">책임: ${leadCount}개</span>
-                    </span>`;
-                li.style.backgroundColor = background;
-                li.setAttribute("style", `background-color: ${background} !important`);
-                console.log("🧪 배경 적용:", position, staff.userName, background, staff.staffClass);
+                // 보직자/일반직원 나누기
+                const executives = []; // 단장/본부장
+                const managers = [];   // 센터장/실장
+                const normals = [];    // 일반직원
 
-                li.dataset.staffId = staff.staffId;
-                li.onclick = function () {
-                    selectedStaffId = staff.staffId;
-                    document.querySelectorAll("#staffList li").forEach(item => item.classList.remove("selected"));
-                    this.classList.add("selected");
-                    loadExistingParticipation(staff.staffId);
-                };
+                staffArray.forEach(staff => {
+                    const position = (staff.staffClass || "").trim();
+                    if (position === "단장" || position === "본부장") {
+                        executives.push(staff);
+                    } else if (position === "센터장" || position === "실장") {
+                        managers.push(staff);
+                    } else {
+                        normals.push(staff);
+                    }
+                });
 
-                staffList.appendChild(li);
+                const sortedStaffs = [...executives, ...managers, ...normals]; // 순서대로 합치기
+
+                // 직원 출력
+                sortedStaffs.forEach(staff => {
+                    let li = document.createElement("li");
+                    let background = "";
+                    const position = (staff.staffClass || "").trim();
+
+                    // ✅ 배경색 조건
+                    if (position === "단장" || position === "본부장") {
+                        background = "rgba(173, 255, 47, 0.2)"; // 연한 연두
+                    } else if (position === "센터장" || position === "실장") {
+                        background = "rgba(255, 255, 102, 0.2)"; // 연한 노랑
+                    }
+
+                    const total = staff.totalParticipation ?? 0;
+                    const leadCount = staff.leadTaskCount ?? 0;
+
+                    const totalColor = total > 129 ? "red" : total > 100 ? "orange" : "black";
+                    const leadColor = leadCount >= 4 ? "red" : leadCount >= 3 ? "orange" : "black";
+
+                    li.innerHTML = `<span>${staff.userName} (${staff.staffId})</span>
+                        <span style="float: right;">
+                            <span style="color: ${totalColor}; font-weight: bold;">총 ${total}%</span> /
+                            <span style="color: ${leadColor}; font-weight: bold;">책임: ${leadCount}개</span>
+                        </span>`;
+                    li.style.backgroundColor = background;
+                    li.setAttribute("style", `background-color: ${background} !important`);
+
+                    li.dataset.staffId = staff.staffId;
+                    li.onclick = function () {
+                        selectedStaffId = staff.staffId;
+                        document.querySelectorAll("#staffList li").forEach(item => item.classList.remove("selected"));
+                        this.classList.add("selected");
+                        loadExistingParticipation(staff.staffId);
+                    };
+
+                    staffList.appendChild(li);
+                });
             });
         })
         .catch(error => console.error("직원 데이터 불러오기 실패:", error));
