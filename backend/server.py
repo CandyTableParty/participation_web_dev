@@ -176,6 +176,7 @@ def save_participation(data: List[ParticipationInput]):
     finally:
         cursor.close()
         conn.close()
+        
 # ✅ 부서 목록 조회 (인원 관리)
 @app.get("/departments/staff")
 def get_staff_departments():
@@ -200,6 +201,30 @@ def get_project_departments():
         cursor.execute("SELECT DISTINCT department FROM projects")
         departments = cursor.fetchall()
         return [dept["department"] for dept in departments if dept["department"]]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"오류 발생: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+        
+@app.get("/departments")
+def get_upper_departments():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT DISTINCT staffDepartment FROM staff")
+        departments = cursor.fetchall()
+        
+        upper_departments = set()
+        for dept in departments:
+            if dept["staffDepartment"]:
+                parts = dept["staffDepartment"].split("-")
+                if len(parts) > 1:
+                    upper_departments.add(parts[0])
+                else:
+                    upper_departments.add(dept["staffDepartment"])  # -가 없으면 그대로
+
+        return sorted(list(upper_departments))  # 알파벳/한글순 정렬
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"오류 발생: {str(e)}")
     finally:
