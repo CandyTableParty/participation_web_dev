@@ -183,8 +183,8 @@ def get_staff_departments():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT DISTINCT staffDepartment FROM staff ORDER BY staffDepartment ASC")  # ✅ 정렬 추가
         departments = cursor.fetchall()
+        cursor.execute("SELECT DISTINCT staffDepartment FROM staff ORDER BY staffDepartment ASC")  # ✅ 정렬 추가
         return [dept["staffDepartment"] for dept in departments if dept["staffDepartment"]]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"오류 발생: {str(e)}")
