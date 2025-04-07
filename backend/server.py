@@ -182,7 +182,7 @@ def get_staff_departments():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT DISTINCT staffDepartment FROM staff")
+        cursor.execute("SELECT DISTINCT staffDepartment FROM staff ORDER BY staffDepartment ASC")  # ✅ 정렬 추가
         departments = cursor.fetchall()
         return [dept["staffDepartment"] for dept in departments if dept["staffDepartment"]]
     except Exception as e:
@@ -277,4 +277,3 @@ if __name__ == "__main__":
 @app.get("/protected-api")
 def protected_api(user=Depends(JWTBearer())):
     return {"message": f"안녕하세요, {user['username']}님! 권한: {user['role']}"}
-print("🚀 FastAPI 서버 시작! 현재 사용 DB:", "jun_dev")
