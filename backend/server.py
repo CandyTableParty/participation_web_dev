@@ -192,20 +192,29 @@ def get_staff_departments():
         conn.close()
 
 # ✅ 부서 목록 조회 (사업 관리)
-@app.get("/departments/projects")
-def get_project_departments():
+@app.get("/departments")
+def get_upper_departments():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT DISTINCT department FROM projects")
+        cursor.execute("SELECT DISTINCT staffDepartment FROM staff")
         departments = cursor.fetchall()
-        return [dept["department"] for dept in departments if dept["department"]]
+        
+        upper_departments = set()
+        for dept in departments:
+            staff_dept = dept.get("staffDepartment", "")
+            if staff_dept:
+                parts = staff_dept.split("-")
+                upper_departments.add(parts[0])  # '-' 앞부분 (상위부서) 추가
+
+        # 리스트로 변환하고 오름차순 정렬해서 반환
+        return sorted(upper_departments)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"오류 발생: {str(e)}")
     finally:
         cursor.close()
         conn.close()
-
+        
 # ✅ 직원 목록
 @app.get("/staff")
 @app.get("/staff")
