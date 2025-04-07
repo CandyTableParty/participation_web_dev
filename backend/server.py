@@ -176,13 +176,13 @@ def save_participation(data: List[ParticipationInput]):
     finally:
         cursor.close()
         conn.close()
-        
 # ✅ 부서 목록 조회 (인원 관리)
 @app.get("/departments/staff")
 def get_staff_departments():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        cursor.execute("SELECT DISTINCT staffDepartment FROM staff")
         departments = cursor.fetchall()
         return [dept["staffDepartment"] for dept in departments if dept["staffDepartment"]]
     except Exception as e:
@@ -205,7 +205,7 @@ def get_project_departments():
     finally:
         cursor.close()
         conn.close()
-        
+
 # ✅ 직원 목록
 @app.get("/staff")
 @app.get("/staff")
@@ -277,3 +277,4 @@ if __name__ == "__main__":
 @app.get("/protected-api")
 def protected_api(user=Depends(JWTBearer())):
     return {"message": f"안녕하세요, {user['username']}님! 권한: {user['role']}"}
+print("🚀 FastAPI 서버 시작! 현재 사용 DB:", "jun_dev")
