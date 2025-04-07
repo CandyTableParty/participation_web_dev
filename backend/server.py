@@ -35,15 +35,15 @@ def serve_index():
     with open(path, "r", encoding="utf-8") as file:
         return HTMLResponse(content=file.read())
 
-
+# 데이터 베이스 하드코딩 
 def get_db_connection():
-    ca_path = os.path.join(os.path.dirname(__file__), "isrgrootx1.pem")  # CA 인증서 위치
+    ca_path = os.path.join(os.path.dirname(__file__), "isrgrootx1.pem")  # CA 인증서 위치 테스트 
     return pymysql.connect(
         host="gateway01.ap-northeast-1.prod.aws.tidbcloud.com",
         port=4000,
-        user="4RGaKiyfHpPuAt3.root",
-        password="eK8HW6w0cLFf8sbE",
-        database="test",
+        user="2rRBCAjK77wV3PL.root",
+        password="56186jP2ezwelqax",
+        database="jun_dev",
         cursorclass=pymysql.cursors.DictCursor,
         ssl={"ca": ca_path}
     )
@@ -277,3 +277,4 @@ if __name__ == "__main__":
 @app.get("/protected-api")
 def protected_api(user=Depends(JWTBearer())):
     return {"message": f"안녕하세요, {user['username']}님! 권한: {user['role']}"}
+print("🚀 FastAPI 서버 시작! 현재 사용 DB:", "jun_dev")
